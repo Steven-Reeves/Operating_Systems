@@ -15,22 +15,12 @@ namespace Assign1
     {
         private const int BUFFER_SIZE = 5;
         private const int PRODUCE_COUNT = 10;
+        private const int TIMEOUT = 10;
         private const int N_Producers = 2;
         private const int N_Consumers = 2;
 
         static void Main(string[] args)
         {
-            /*
-            SafeRing ring = new SafeRing(10);
-            ring.Insert(586);
-            Console.WriteLine("Inserted, count = " + ring.Count());
-            ring.Insert(42);
-            Console.WriteLine("Inserted, count = " + ring.Count());
-            int i = ring.Remove();
-            Console.WriteLine("Removed " + i + ", count:" + ring.Count());
-            int hat = ring.Count();
-            Console.WriteLine("Removed " + hat + ", count:" + ring.Count());
-            */
 
             // get a random number
             Random rand = new Random();
@@ -42,7 +32,7 @@ namespace Assign1
 
             for (int i = 0; i < N_Producers; i++)
             {
-                Producer p = new Producer(ring, PRODUCE_COUNT, rand);
+                Producer p = new Producer(ring, PRODUCE_COUNT, rand, TIMEOUT);
                 producers.Add(p);
                 producersComplete.Add(p.Complete);
                 p.Start();
@@ -50,7 +40,7 @@ namespace Assign1
 
             for (int i = 0; i < N_Consumers; i++)
             {
-                Consumer c = new Consumer(ring, rand);
+                Consumer c = new Consumer(ring, rand, TIMEOUT);
                 consumers.Add(c);
                 c.Start();
             }

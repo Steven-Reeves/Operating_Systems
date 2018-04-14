@@ -14,12 +14,14 @@ namespace Assign1
         private Random rand;
         private Thread thread;
         private bool stop = false;
+        private int timeout;
 
-        public Consumer(SafeRing queue, Random rand)
+        public Consumer(SafeRing queue, Random rand, int timeout = -1)
         {
             this.queue = queue;
             this.rand = rand;
             thread = new Thread(ThreadCon);
+            this.timeout = timeout;
         }
 
         private static void ThreadCon(object param)
@@ -42,7 +44,7 @@ namespace Assign1
                 try
                 {
 
-                int num = queue.Remove();
+                int num = queue.Remove(timeout);
                 int nap = rand.Next(1, 1000);
 
                 Thread.Sleep(nap);
@@ -50,6 +52,10 @@ namespace Assign1
                 catch(ThreadInterruptedException)
                 {
                     //expected, done.
+                }
+                catch (TimeoutException te)
+                {
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Error: " + te.Message);
                 }
             }
         }

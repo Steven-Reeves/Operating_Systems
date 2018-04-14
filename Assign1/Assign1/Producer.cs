@@ -15,14 +15,16 @@ namespace Assign1
         private Random rand;
         private int numItems;
         private Thread thread;
+        private int timeout;
 
-        public Producer(SafeRing queue, int itemNum, Random rand)
+        public Producer(SafeRing queue, int itemNum, Random rand, int timeout = -1)
         {
             this.queue = queue;
             this.rand = rand;
             this.numItems = itemNum;
             complete = new ManualResetEvent(false);
             thread = new Thread(ThreadProc);
+            this.timeout = timeout;
         }
 
         private static void ThreadProc(object param)
@@ -41,10 +43,32 @@ namespace Assign1
         {
             for (int i = 0; i < numItems; i++)
             {
-                int num = rand.Next(1, 1000);
-                queue.Insert(num);
 
-                Thread.Sleep(num);
+                int num = rand.Next(1, 1000);
+
+                int tries = 0;
+                bool success = false;
+                do
+                {
+                    try
+                    {
+                        queue.Insert(num, timeout);
+                        success = true;
+
+                        Thread.Sleep(num);
+                    }
+                    catch (TimeoutException te)
+                    {
+                        tries++;
+                        Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Error: " + te.Message);
+                    }
+                }
+                while (!success && tries < 10);
+
+                if(!success)
+                {
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Fatal timeout!");
+                }
             }
             // Signal you're complete
             complete.Set();

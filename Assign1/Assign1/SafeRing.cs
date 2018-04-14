@@ -32,12 +32,16 @@ namespace Assign1
             hasItems = new ManualResetEvent(false);
         }
 
-        public int Remove()
+        public int Remove(int timeout = -1)
         {
             // Mutex and ManualResetEvent are derived from WaitHandle
-            WaitHandle.WaitAll(new WaitHandle[] { mutex, hasItems });
+            if(!WaitHandle.WaitAll(new WaitHandle[] { mutex, hasItems }, timeout))
+            {
+                // timed out
+                // mutex.ReleaseMutex();
+                throw new TimeoutException("Timed out!");
+            }
 
-            // TODO update this from lecture 1
             int i = buffer[head];
             head = (head + 1) % capacity;
             count--;
@@ -55,9 +59,14 @@ namespace Assign1
             return i;
         }
 
-        public void Insert(int number)
+        public void Insert(int number, int timeout = -1)
         {
-            WaitHandle.WaitAll(new WaitHandle[] { mutex, hasCapacity });
+            if(!WaitHandle.WaitAll(new WaitHandle[] { mutex, hasCapacity }, timeout))
+            {
+                // timed out
+                // mutex.ReleaseMutex();
+                throw new TimeoutException("Timed out!");
+            }
 
             buffer[tail] = number;
             tail = (tail + 1) % capacity;
@@ -75,8 +84,13 @@ namespace Assign1
 
         }
 
-        public int Count()
+        public int Count(int timeout = -1)
         {
+            // TODO: If loop for timeout on count
+
+            //if(!mutex)...
+
+
             // Make sure that nothing is being inserted or removed
             mutex.WaitOne();
 
