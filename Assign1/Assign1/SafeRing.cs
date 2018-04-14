@@ -13,6 +13,8 @@ namespace Assign1
         private int capacity;
         private int[] buffer;
         private int count;
+        private int head;
+        private int tail;
         private Mutex mutex;
         private ManualResetEvent hasCapacity;
         private ManualResetEvent hasItems;
@@ -45,7 +47,7 @@ namespace Assign1
             if (count == 0)
                 hasItems.Reset();
 
-            Console.WriteLine("Removed: " + i + " !");
+            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " removed: " + i + " !");
 
             // Release the mutex, so other threads can use it
             mutex.ReleaseMutex();
@@ -57,12 +59,11 @@ namespace Assign1
         {
             WaitHandle.WaitAll(new WaitHandle[] { mutex, hasCapacity });
 
-            // TODO update this from lecture 1
             buffer[tail] = number;
             tail = (tail + 1) % capacity;
             count++;
 
-            Console.WriteLine("Inserted: " + number + " !");
+            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " inserted: " + number + " !");
 
             hasItems.Set();
 
