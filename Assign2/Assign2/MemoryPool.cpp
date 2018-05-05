@@ -23,21 +23,24 @@ void * FirstFitPool::Allocate(unsigned int nBytes)
 	// allocate it
 	// return it
 
-	unsigned int i;
-	for (i = 0; i < blocks.size() && !suitable_block(blocks[i], nBytes); i++);
+	std::list<block>::iterator i = blocks.end();
 
-	if (i < blocks.size())
+	for (i = blocks.begin(); i != blocks.end() && !suitable_block(*i, nBytes); i++);
+
+	if (i != blocks.end())
 	{
-		block b = blocks[i];
-		void * address = (pool + b.index);
+
+		void * address = (pool + i->index);
 
 		// Split the block
-		blocks.push_back({ b.index + nBytes, b.size - nBytes, false });
+		block child = { i->index + nBytes, i->size - nBytes, false };
 
-		b.isAllocated = true;
-		b.size = nBytes;
+		i->isAllocated = true;
+		i->size = nBytes;
 
-		blocks[i] = b;
+		i++;
+		blocks.insert(i, child);
+
 		return address;
 			
 	}
@@ -46,10 +49,50 @@ void * FirstFitPool::Allocate(unsigned int nBytes)
 	return nullptr;
 }
 
-void FirstFitPool::Free(void * block)
+void FirstFitPool::Free(void * address)
 {
+	// Get index into pool
+	unsigned int index = ((unsigned char *)address - pool);
 
-}
+	for (std::list<block>::iterator i = blocks.begin(); i != blocks.end(); i++)
+	{
+		if (i->index == index)
+		{
+			i->isAllocated = false;
+
+			//combine with previous available block if possible
+			if (i != blocks.begin())
+			{
+				std::list<block>::iterator prev = i;
+				prev--;
+				if (!prev->isAllocated)
+				{
+					i->index = prev->index;
+					i->size += prev->size;
+
+					blocks.erase(prev);
+				}
+
+			}
+			std::list<block>::iterator next = i;
+			next++;
+
+			//combine with next available block
+			if (next != blocks.end() && !next->isAllocated)
+			{
+				i->size += next->size;
+				//next block is out
+				blocks.erase(next);
+			}
+			return;
+		}
+			else
+			{
+				// TODO throw exception
+			}
+		}
+	}
+
 
 void FirstFitPool::DebugPrint()
 {
@@ -57,7 +100,7 @@ void FirstFitPool::DebugPrint()
 
 	for each (block b in blocks)
 	{
-		// TODO: add tabs
-		std::cout << b.index << ", " << b.size << ", " << b.isAllocated << std::endl;
+		
+		std::cout << "\t" << b.index << ", " << b.size << ", " << (b.isAllocated ? "Allocated!" : "Free!") << std::endl;
 	}
 }

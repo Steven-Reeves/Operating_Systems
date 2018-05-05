@@ -4,7 +4,7 @@
 // CST_352
 // MemoryPool.h
 
-#include <vector>
+#include <list>
 #include <iostream>
 
 class MemoryPool
@@ -30,7 +30,7 @@ private:
 		bool isAllocated;
 		// block(int index, int size, bool allocated) TODO: remove this
 	};
-	std::vector<block> blocks;
+	std::list<block> blocks;
 
 public:
 	FirstFitPool(unsigned int poolSize);
