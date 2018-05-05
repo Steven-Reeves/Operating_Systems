@@ -133,12 +133,11 @@ namespace MiniFS
 
                 vfs.Format(disk);
                 vfs.Mount(disk, "/");
-                /*
-                VirtualNode root = vfs.RootNode;
-                 
+                
+                VirtualNode root = vfs.RootNode;               
                 VirtualNode dir1 = root.CreateDirectoryNode("dir1");
                 VirtualNode dir2 = root.CreateDirectoryNode("dir2");
-
+                /*
                 VirtualNode file1 = dir1.CreateFileNode("file1");
                 TestFileWriteRead(file1, r, 0, 100);    // 1 sector
                 TestFileWriteRead(file1, r, 0, 500);    // 2 sectors
@@ -147,8 +146,9 @@ namespace MiniFS
                 vfs.Unmount("/");
 
                 vfs.Mount(disk, "/");
-                RecursivelyPrintNodes(vfs.RootNode);
                 */
+                RecursivelyPrintNodes(vfs.RootNode);
+
                 disk.TurnOff();
                 Console.WriteLine("TestVirtualFileSystem success!");
             }

@@ -97,9 +97,18 @@ namespace SimpleFileSystem
         public int[] GetNextFreeSectors(int count)
         {
             // find count available free sectors on the disk and return their addresses
-            // TODO: VirtualDrive.GetNextFreeSectors()
 
             int[] result = new int[count];
+
+            int foundIndex = 0;
+            for(int address = 0; address < disk.SectorCount && foundIndex < count; address++)
+            {
+                byte[] raw = disk.ReadSector(address);
+                if (SECTOR.GetTypeFromBytes(raw) == SECTOR.SectorType.FREE_SECTOR)
+                {
+                    result[foundIndex++] = address;
+                }
+            }
 
             return result;
         }
@@ -160,18 +169,87 @@ namespace SimpleFileSystem
 
         private void LoadChildren()
         {
-            // TODO: VirtualNode.LoadChildren()
+            if (children == null)
+            {
+                children = new Dictionary<string, VirtualNode>();
+                DATA_SECTOR data = DATA_SECTOR.CreateFromBytes(drive.Disk.ReadSector(sector.FirstDataAt));
+
+                for (int i = 0; i < ChildCount; i++)
+                {
+                    int childAddress = BitConverter.ToInt32(data.DataBytes, i * 4);
+
+                    NODE childSector = NODE.CreateFromBytes(drive.Disk.ReadSector(childAddress));
+
+                    VirtualNode vn = new VirtualNode(drive, childAddress, childSector, this);
+                    children.Add(childSector.Name, vn);
+                }
+            }
+
         }
 
         private void CommitChildren()
         {
-            // TODO: VirtualNode.CommitChildren()
+            if (children != null)
+            {
+                // Create empty byte array
+                byte[] childListBytes = new byte[DATA_SECTOR.MaxDataLength(drive.Disk.BytesPerSector)];
+
+                int i = 0;
+                foreach (VirtualNode childNode in children.Values)
+                {
+                    int childAddress = childNode.nodeSector;
+                    BitConverter.GetBytes(childAddress).CopyTo(childListBytes, i * 4);
+                    i++;
+                }
+
+                DATA_SECTOR data = new DATA_SECTOR(drive.Disk.BytesPerSector, 0, childListBytes);
+                drive.Disk.WriteSector(sector.FirstDataAt, data.RawBytes);
+
+                // save the entry count
+                drive.Disk.WriteSector(nodeSector, sector.RawBytes);
+
+            }
         }
 
         public VirtualNode CreateDirectoryNode(string name)
         {
-            // TODO: VirtualNode.CreateDirectoryNode()
-            return null;
+            // Only create children if we're a directory
+            if(!IsDirectory)
+            {
+                throw new Exception("Must be a directory to create children!");            
+            }
+
+            // Create new child node as a directory
+
+            // read current list of children
+            LoadChildren();
+
+            // allocate a new DIR_NODE and DATA_SECTOR on the disk
+
+            // Find the first two FREE_SECTORs on the disk
+            int[] freeSectors = drive.GetNextFreeSectors(2);
+
+            //DIR_NODE
+            DIR_NODE dirSector = new DIR_NODE(drive.Disk.BytesPerSector, freeSectors[1], name, 0);
+            drive.Disk.WriteSector(freeSectors[0], dirSector.RawBytes);
+
+            //DATA_SECTOR
+            DATA_SECTOR dataSector = new DATA_SECTOR(drive.Disk.BytesPerSector, 0, new byte[] { 0 });
+            drive.Disk.WriteSector(freeSectors[1], dataSector.RawBytes);
+
+            // Create a new virtual node
+            VirtualNode newNode = new VirtualNode(drive, freeSectors[0], dirSector, this);
+
+            // Add it to its parent
+            children.Add(name, newNode);
+
+            // Increment child count
+            (sector as DIR_NODE).EntryCount++;
+
+            CommitChildren();
+
+            // Return new node        
+            return newNode;
         }
 
         public VirtualNode CreateFileNode(string name)
@@ -182,8 +260,8 @@ namespace SimpleFileSystem
 
         public IEnumerable<VirtualNode> GetChildren()
         {
-            // TODO: VirtualNode.GetChildren()
-            return null;
+            LoadChildren();
+            return children.Values;
         }
 
         public VirtualNode GetChild(string name)
