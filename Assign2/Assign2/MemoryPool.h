@@ -7,6 +7,11 @@
 #include <list>
 #include <iostream>
 
+class OutOfMemoryException 
+{
+
+};
+
 class MemoryPool
 {
 protected:
@@ -19,7 +24,7 @@ public:
 	virtual void DebugPrint() = 0;
 };
 
-class FirstFitPool : MemoryPool
+class FirstFitPool : public MemoryPool
 {
 private:
 	unsigned char * pool;

@@ -45,7 +45,8 @@ void * FirstFitPool::Allocate(unsigned int nBytes)
 			
 	}
 
-	// TODO: Throw exception here
+	throw OutOfMemoryException();
+
 	return nullptr;
 }
 
