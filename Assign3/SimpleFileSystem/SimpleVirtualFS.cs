@@ -1,6 +1,6 @@
 ﻿// SimpleVirtualFS.cs
-// Pete Myers
-// Spring 2018
+// Pete Myers and Steven Reeves
+// 5/5/2018
 //
 // NOTE: Implement the methods and classes in this file
 
@@ -31,15 +31,42 @@ namespace SimpleFileSystem
         {
             // wipe all sectors of disk and create minimum required DRIVE_INFO, DIR_NODE and DATA_SECTOR
 
-            // TODO: VirtualFS.Format()
+            FREE_SECTOR free = new FREE_SECTOR(disk.BytesPerSector);
+
+            for (int i = 0; i < disk.SectorCount; i++)
+                disk.WriteSector(0, free.RawBytes);
+
+            // DRIVE_INFO
+            DRIVE_INFO drive = new DRIVE_INFO(disk.BytesPerSector, ROOT_DIR_SECTOR);
+            disk.WriteSector(DRIVE_INFO_SECTOR, drive.RawBytes);
+
+            // DIR_NODE for root node
+            DIR_NODE rootDir = new DIR_NODE(disk.BytesPerSector, ROOT_DATA_SECTOR, FSConstants.PATH_SEPARATOR.ToString(), 0);
+            disk.WriteSector(ROOT_DIR_SECTOR, rootDir.RawBytes);
+
+            // DATA_SECTOR for root node
+            DATA_SECTOR data = new DATA_SECTOR(disk.BytesPerSector, 0, new byte[] { 0 });
+            disk.WriteSector(ROOT_DATA_SECTOR, data.RawBytes);
         }
 
         public void Mount(DiskDriver disk, string mountPoint)
         {
-            // read drive info from disk, load root node and connect to mountPoint
             // for the first mounted drive, expect mountPoint to be named FSConstants.PATH_SEPARATOR as the root
+            if(drives.Count == 0 && mountPoint != FSConstants.PATH_SEPARATOR.ToString())
+            {
+                throw new Exception("Expected first mounted dist to be at root directory!");
+            }
 
-            // TODO: VirtualFS.Mount()
+            // read drive info from disk, load root node and connect to mountPoint
+
+            DRIVE_INFO driveInfo = DRIVE_INFO.CreateFromBytes(disk.ReadSector(DRIVE_INFO_SECTOR));
+            VirtualDrive drive = new VirtualDrive(disk, DRIVE_INFO_SECTOR, driveInfo);
+
+            DIR_NODE rootSector = DIR_NODE.CreateFromBytes(disk.ReadSector(ROOT_DIR_SECTOR));
+            rootNode = new VirtualNode(drive, ROOT_DIR_SECTOR, rootSector, null);
+
+            drives.Add(mountPoint, drive);
+
         }
 
         public void Unmount(string mountPoint)

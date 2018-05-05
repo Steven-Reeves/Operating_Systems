@@ -1,6 +1,6 @@
 ﻿// Program.cs
-// Pete Myers
-// Spring 2018
+// Pete Myers and Steven Reeves
+// 5/5/2018
 
 // NOTE: Implement the methods in this file
 
@@ -18,10 +18,10 @@ namespace MiniFS
         {
             try
             {
-                TestDisks();
-                TestPhysicalFileSystem();
+                //TestDisks();
+                //TestPhysicalFileSystem();
                 TestVirtualFileSystem();
-                TestLogicalFileSystem();
+                //TestLogicalFileSystem();
             }
             catch (Exception ex)
             {
@@ -74,16 +74,44 @@ namespace MiniFS
             VolatileDisk disk = new VolatileDisk(1);
             disk.TurnOn();
 
-            // TODO: FREE_SECTOR
+            // FREE_SECTOR
+            FREE_SECTOR free1 = new FREE_SECTOR(disk.BytesPerSector);
+            disk.WriteSector(0, free1.RawBytes);
+            FREE_SECTOR free2 = FREE_SECTOR.CreateFromBytes(disk.ReadSector(0));
+            CheckBytes("Free1", free1, "free2", free2);
+            Console.WriteLine("FREE_SECTOR successful");
 
-            // TODO: DRIVE_INFO
+            // DRIVE_INFO
+            int rootNodeAt = 1;
+            DRIVE_INFO drive1 = new DRIVE_INFO(disk.BytesPerSector, rootNodeAt);
+            disk.WriteSector(0, drive1.RawBytes);
+            DRIVE_INFO drive2 = DRIVE_INFO.CreateFromBytes(disk.ReadSector(0));
+            CheckBytes("drive1", drive1, "drive2", drive2);
+            Console.WriteLine("DRIVE_SECTOR successful");
 
-            // TODO: DIR_NODE
+            // DIR_NODE
+            DIR_NODE rootDir1 = new DIR_NODE(disk.BytesPerSector, 2, FSConstants.PATH_SEPARATOR.ToString(), 42);
+            disk.WriteSector(rootNodeAt, rootDir1.RawBytes);
+            DIR_NODE rootDir2 = DIR_NODE.CreateFromBytes(disk.ReadSector(rootNodeAt));
+            CheckBytes("rootDir1", rootDir1, "rootDir2", rootDir2);
+            Console.WriteLine("DIR_NODE successful");
 
-            // TODO: FILE_NODE
+            // FILE_NODE
+            FILE_NODE file1 = new FILE_NODE(disk.BytesPerSector, 8, "file1", 1000);
+            disk.WriteSector(5, file1.RawBytes);
+            FILE_NODE file2 = FILE_NODE.CreateFromBytes(disk.ReadSector(5));
+            CheckBytes("file1", file1, "file2", file2);
+            Console.WriteLine("FILE_NODE successful");
 
-            // TODO: DATA_SECTOR
-            
+            // DATA_SECTOR
+            byte[] filedata = CreateTestBytes(new Random(), DATA_SECTOR.MaxDataLength(disk.BytesPerSector));
+            DATA_SECTOR data1 = new DATA_SECTOR(disk.BytesPerSector, 9, filedata);
+            disk.WriteSector( 8, data1.RawBytes);
+            DATA_SECTOR data2 = DATA_SECTOR.CreateFromBytes(disk.ReadSector(8));
+            CheckBytes("data1", data1, "data2", data2);
+            Console.WriteLine("DATA_SECTOR successful");
+
+
             disk.TurnOff();
         }
 
@@ -105,8 +133,9 @@ namespace MiniFS
 
                 vfs.Format(disk);
                 vfs.Mount(disk, "/");
+                /*
                 VirtualNode root = vfs.RootNode;
-
+                 
                 VirtualNode dir1 = root.CreateDirectoryNode("dir1");
                 VirtualNode dir2 = root.CreateDirectoryNode("dir2");
 
@@ -119,8 +148,9 @@ namespace MiniFS
 
                 vfs.Mount(disk, "/");
                 RecursivelyPrintNodes(vfs.RootNode);
-
+                */
                 disk.TurnOff();
+                Console.WriteLine("TestVirtualFileSystem success!");
             }
             catch (Exception ex)
             {
