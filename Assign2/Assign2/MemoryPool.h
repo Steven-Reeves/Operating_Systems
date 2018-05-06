@@ -16,33 +16,44 @@ class MemoryPool
 {
 protected:
 	unsigned int poolSize;
-
-public:
-	MemoryPool(unsigned int poolSize) : poolSize(poolSize) {};
-	virtual void * Allocate(unsigned int nBytes) = 0;
-	virtual void Free(void * block) = 0;
-	virtual void DebugPrint() = 0;
-};
-
-class FirstFitPool : public MemoryPool
-{
-private:
 	unsigned char * pool;
 	struct block
 	{
 		unsigned int index;
 		unsigned int size;
 		bool isAllocated;
-		// block(int index, int size, bool allocated) TODO: remove this
 	};
 	std::list<block> blocks;
 
 public:
-	FirstFitPool(unsigned int poolSize);
-	virtual void * Allocate(unsigned int nBytes) ;
+	MemoryPool(unsigned int poolSize);
+	virtual void * Allocate(unsigned int nBytes) = 0;
 	virtual void Free(void * block);
 	virtual void DebugPrint();
+protected:
+	virtual char * ClassName() = 0;
+};
+
+class FirstFitPool : public MemoryPool
+{
+public:
+	FirstFitPool(unsigned int poolSize);
+	virtual void * Allocate(unsigned int nBytes) ;
+
+protected:
+	virtual char * ClassName() { return "FirstFitPool"; }
 
 private:
 	bool suitable_block(block b, unsigned int nBytes);
+};
+
+class BestFitPool : public MemoryPool
+{
+
+public:
+	BestFitPool(unsigned int poolSize);
+	virtual void * Allocate(unsigned int nBytes);
+
+protected:
+	virtual char * ClassName() { return "BestFitPool"; }
 };
