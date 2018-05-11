@@ -172,6 +172,7 @@ namespace SimpleFileSystem
             if (children == null)
             {
                 children = new Dictionary<string, VirtualNode>();
+                // TODO: crash possibly here
                 DATA_SECTOR data = DATA_SECTOR.CreateFromBytes(drive.Disk.ReadSector(sector.FirstDataAt));
 
                 for (int i = 0; i < ChildCount; i++)
@@ -219,8 +220,6 @@ namespace SimpleFileSystem
                 throw new Exception("Must be a directory to create children!");            
             }
 
-            // Create new child node as a directory
-
             // read current list of children
             LoadChildren();
 
@@ -254,7 +253,38 @@ namespace SimpleFileSystem
 
         public VirtualNode CreateFileNode(string name)
         {
-            // TODO: VirtualNode.CreateFileNode()
+            if (!IsDirectory)
+            {
+                throw new Exception("Must be a directory to create children!");
+            }
+
+            // read current list of children
+            LoadChildren();
+
+            // Find the first two FREE_SECTORs on the disk
+            int[] freeSectors = drive.GetNextFreeSectors(2);
+
+            // allocate a new FILE_NODE and DATA_SECTOR on the disk
+
+            //FILE_NODE
+            FILE_NODE fileSector = new FILE_NODE(drive.Disk.BytesPerSector, freeSectors[1], name, 0);
+            drive.Disk.WriteSector(freeSectors[0], fileSector.RawBytes);
+
+            //DATA_SECTOR
+            DATA_SECTOR dataSector = new DATA_SECTOR(drive.Disk.BytesPerSector, 0, new byte[] { 0 });
+            drive.Disk.WriteSector(freeSectors[1], dataSector.RawBytes);
+
+            // Create a new virtual node
+            VirtualNode newNode = new VirtualNode(drive, freeSectors[0], fileSector, this);
+
+            // Add it to its parent
+            children.Add(name, newNode);
+
+            // Increment child count
+            (sector as DIR_NODE).EntryCount++;
+
+            CommitChildren();
+
             return null;
         }
 
@@ -273,12 +303,34 @@ namespace SimpleFileSystem
 
         private void LoadBlocks()
         {
-            // TODO: VirtualNode.LoadBlocks()
+            if (blocks == null)
+            {
+                blocks = new List<VirtualBlock>();
+
+                // find data sectors
+                int dataSectorAddr = sector.FirstDataAt;
+                while (dataSectorAddr != 0)
+                {
+                    DATA_SECTOR dataSector = DATA_SECTOR.CreateFromBytes(drive.Disk.ReadSector(dataSectorAddr));
+                    VirtualBlock block = new VirtualBlock(drive, dataSectorAddr, dataSector);
+                    blocks.Add(block);
+
+                    // Go on to next data sector
+                    dataSectorAddr = dataSector.NextSectorAt;
+                }
+            }
         }
 
         private void CommitBlocks()
         {
-            // TODO: VirtualNode.CommitBlocks()
+            // Write dirty blocks to disk
+            if (blocks != null)
+            {
+                foreach (VirtualBlock vb in blocks)
+                {
+                    vb.CommitBlock();
+                }
+            }
         }
 
         public byte[] Read(int index, int length)
@@ -289,7 +341,21 @@ namespace SimpleFileSystem
 
         public void Write(int index, byte[] data)
         {
-            // TODO: VirtualNode.Write()
+            // Make sure this is a file
+            if (!IsFile)
+                throw new Exception("Must write to a file!");
+
+            // Load the cache of blocks for the file
+            LoadBlocks();
+
+            // TODO: Grow the cached blocks if needed
+
+            // Write the bytes to the cache
+            VirtualBlock.WriteBlockData(drive, blocks, index, data);
+
+            // Flush the cache of blocks
+            CommitBlocks();
+
         }
     }
 
@@ -324,7 +390,12 @@ namespace SimpleFileSystem
 
         public void CommitBlock()
         {
-            // TODO: VirtualBlock.CommitBlock()
+            // Write this block's data to disk, if it's dirty
+            if(dirty)
+            {
+                drive.Disk.WriteSector(sectorAddress, sector.RawBytes);
+                dirty = false;
+            }
         }
 
         public static byte[] ReadBlockData(VirtualDrive drive, List<VirtualBlock> blocks, int startIndex, int length)
@@ -335,7 +406,46 @@ namespace SimpleFileSystem
 
         public static void WriteBlockData(VirtualDrive drive, List<VirtualBlock> blocks, int startIndex, byte[] data)
         {
-            // TODO: VirtualBlock.WriteBlockData()
+            // Write data into the list of blocks, starting at index
+
+            // calculate starting block and ending block
+            int blockSize = drive.BytesPerDataSector;
+            int startBlock = startIndex / blockSize;
+            int endBlock = (startIndex + data.Length) / blockSize;
+
+            // Write data to first block
+            {
+                VirtualBlock vb = blocks[startBlock];
+                byte[] blockData = vb.Data;
+                // Overwrite old data
+
+                int fromStart = 0;
+                int toStart = startIndex % blockSize;
+                int copyCount = Math.Min(data.Length, blockSize - toStart);
+
+                CopyBytes(copyCount, data, fromStart, blockData, toStart);
+
+                // Put new data in
+                vb.Data = blockData;
+            }
+
+            // write data to each affected block
+            for (int i = startBlock+1; i < endBlock; i++)
+            {
+                VirtualBlock vb = blocks[i];
+                byte[] blockData = vb.Data;
+
+                // TODO: Overwrite old data
+                int copyCount = 0;
+                int fromStart = 0;
+                int toStart = 0;
+
+                CopyBytes(copyCount, data, fromStart, blockData, toStart);
+
+                // Put new data in
+                vb.Data = blockData;
+            }   
+
         }
 
         public static void ExtendBlocks(VirtualDrive drive, List<VirtualBlock> blocks, int initialFileLength, int finalFileLength)

@@ -137,8 +137,13 @@ namespace MiniFS
                 VirtualNode root = vfs.RootNode;               
                 VirtualNode dir1 = root.CreateDirectoryNode("dir1");
                 VirtualNode dir2 = root.CreateDirectoryNode("dir2");
-                /*
+                // TODO: fix this end of Saturday lab 1 on this
+                //dir2.CreateDirectoryNode("dir3");
+
+               
                 VirtualNode file1 = dir1.CreateFileNode("file1");
+                file1.Write(0, new byte[] { 1, 2, 3 });
+                /*
                 TestFileWriteRead(file1, r, 0, 100);    // 1 sector
                 TestFileWriteRead(file1, r, 0, 500);    // 2 sectors
                 TestFileWriteRead(file1, r, 250, 500);    // 3 sectors
@@ -147,6 +152,7 @@ namespace MiniFS
 
                 vfs.Mount(disk, "/");
                 */
+                // TODO: Fix this
                 RecursivelyPrintNodes(vfs.RootNode);
 
                 disk.TurnOff();
