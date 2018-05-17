@@ -142,8 +142,12 @@ namespace MiniFS
                 dir2.CreateDirectoryNode("dir5");
 
 
-                //VirtualNode file1 = dir1.CreateFileNode("file1");
-                //file1.Write(0, new byte[] { 1, 2, 3 });
+                VirtualNode file1 = dir1.CreateFileNode("file1");
+                VirtualNode file2 = dir1.CreateFileNode("file2");
+                VirtualNode file3 = dir2.CreateFileNode("file3");
+                VirtualNode file4 = dir2.CreateFileNode("file4");
+
+                file1.Write(0, new byte[] { 1, 2, 3 });
                 /*
                 TestFileWriteRead(file1, r, 0, 100);    // 1 sector
                 TestFileWriteRead(file1, r, 0, 500);    // 2 sectors

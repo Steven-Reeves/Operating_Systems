@@ -284,7 +284,7 @@ namespace SimpleFileSystem
 
             CommitChildren();
 
-            return null;
+            return newNode;
         }
 
         public IEnumerable<VirtualNode> GetChildren()
