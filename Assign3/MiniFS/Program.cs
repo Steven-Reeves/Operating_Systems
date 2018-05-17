@@ -147,17 +147,18 @@ namespace MiniFS
                 VirtualNode file3 = dir2.CreateFileNode("file3");
                 VirtualNode file4 = dir2.CreateFileNode("file4");
 
-                file1.Write(0, new byte[] { 1, 2, 3 });
-                /*
+
                 TestFileWriteRead(file1, r, 0, 100);    // 1 sector
+                TestFileWriteRead(file1, r, 42, 77);
+
                 TestFileWriteRead(file1, r, 0, 500);    // 2 sectors
+                /*
                 TestFileWriteRead(file1, r, 250, 500);    // 3 sectors
 
                 vfs.Unmount("/");
 
                 vfs.Mount(disk, "/");
                 */
-
                 RecursivelyPrintNodes(vfs.RootNode);
 
                 disk.TurnOff();
