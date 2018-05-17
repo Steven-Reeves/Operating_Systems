@@ -34,7 +34,7 @@ namespace SimpleFileSystem
             FREE_SECTOR free = new FREE_SECTOR(disk.BytesPerSector);
 
             for (int i = 0; i < disk.SectorCount; i++)
-                disk.WriteSector(0, free.RawBytes);
+                disk.WriteSector(i, free.RawBytes);
 
             // DRIVE_INFO
             DRIVE_INFO drive = new DRIVE_INFO(disk.BytesPerSector, ROOT_DIR_SECTOR);
@@ -172,7 +172,6 @@ namespace SimpleFileSystem
             if (children == null)
             {
                 children = new Dictionary<string, VirtualNode>();
-                // TODO: crash possibly here
                 DATA_SECTOR data = DATA_SECTOR.CreateFromBytes(drive.Disk.ReadSector(sector.FirstDataAt));
 
                 for (int i = 0; i < ChildCount; i++)
