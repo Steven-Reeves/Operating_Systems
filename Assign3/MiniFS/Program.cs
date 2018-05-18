@@ -20,8 +20,8 @@ namespace MiniFS
             {
                 //TestDisks();
                 //TestPhysicalFileSystem();
-                TestVirtualFileSystem();
-                //TestLogicalFileSystem();
+                //TestVirtualFileSystem();
+                TestLogicalFileSystem();
             }
             catch (Exception ex)
             {
@@ -177,7 +177,19 @@ namespace MiniFS
                 Console.WriteLine("Delete file!");
                 VirtualNode file6 = vfs.RootNode.CreateFileNode("file6");
                 file6.Write(0, CreateTestBytes(r, 1000));
+                Console.WriteLine("File before deleting!");
+                RecursivelyPrintNodes(vfs.RootNode);
                 file6.Delete();
+                Console.WriteLine("File after deleting!");
+                RecursivelyPrintNodes(vfs.RootNode);
+
+                // Delete directory
+                Console.WriteLine("Delete Directory!");
+                VirtualNode deleteDir2 = vfs.RootNode.GetChild("dir2");
+                VirtualNode deleteDir1 = deleteDir2.GetChild("newdir1");
+                //deleteDir2.Delete();
+                deleteDir1.Delete();
+                Console.WriteLine("...After deleting Directory!");
                 RecursivelyPrintNodes(vfs.RootNode);
 
                 disk.TurnOff();
@@ -222,68 +234,79 @@ namespace MiniFS
 
         static void TestLogicalFileSystem()
         {
-            //DiskDriver disk = new VolatileDisk(1);
-            DiskDriver disk = new PersistentDisk(1, "disk1");
-            disk.TurnOn();
+            try
+            {
+                DiskDriver disk = new VolatileDisk(1);
+                //DiskDriver disk = new PersistentDisk(1, "disk1");
+                disk.TurnOn();
 
-            FileSystem fs = new SimpleFS();
-            fs.Format(disk);
-            fs.Mount(disk, "/");
+                FileSystem fs = new SimpleFS();
+                fs.Format(disk);                
+                fs.Mount(disk, "/");
+                
+                Directory root = fs.GetRootDirectory();
+                
+                Directory dir1 = root.CreateDirectory("dir1");
+                Directory dir2 = root.CreateDirectory("dir2");
+                /*
+                Random r = new Random();
+                byte[] bytes1 = CreateTestBytes(r, 1000);
+                File file2 = dir2.CreateFile("file2");
+                FileStream stream1 = file2.Open();
+                stream1.Write(0, bytes1);
+                stream1.Close();
+                
+                File file2_2 = (File)fs.Find("/dir2/file2");
+                FileStream stream2 = file2_2.Open();
+                byte[] bytes2 = stream2.Read(0, 1000);
+                stream2.Close();
+                if (!Compare(bytes1, bytes2))
+                    throw new Exception("bytes read were not the same as written");
 
-            Directory root = fs.GetRootDirectory();
+                Console.WriteLine("Printing all directories...");
+                RecursivelyPrintDirectories(root);
+                Console.WriteLine();
 
-            Directory dir1 = root.CreateDirectory("dir1");
-            Directory dir2 = root.CreateDirectory("dir2");
+                Console.WriteLine("Moving file2 to dir1...");
+                file2.Move(dir1);
 
-            Random r = new Random();
-            byte[] bytes1 = CreateTestBytes(r, 1000);
-            File file2 = dir2.CreateFile("file2");
-            FileStream stream1 = file2.Open();
-            stream1.Write(0, bytes1);
-            stream1.Close();
+                Console.WriteLine("Printing all directories...");
+                RecursivelyPrintDirectories(root);
+                Console.WriteLine();
 
-            File file2_2 = (File)fs.Find("/dir2/file2");
-            FileStream stream2 = file2_2.Open();
-            byte[] bytes2 = stream2.Read(0, 1000);
-            stream2.Close();
-            if (!Compare(bytes1, bytes2))
-                throw new Exception("bytes read were not the same as written");
+                Console.WriteLine("Renaming dir2 to renamed...");
+                dir2.Rename("renamed");
 
-            Console.WriteLine("Printing all directories...");
-            RecursivelyPrintDirectories(root);
-            Console.WriteLine();
+                Console.WriteLine("Printing all directories...");
+                RecursivelyPrintDirectories(root);
+                Console.WriteLine();
 
-            Console.WriteLine("Moving file2 to dir1...");
-            file2.Move(dir1);
+                Console.WriteLine("Deleting renamed...");
+                dir2.Delete();
 
-            Console.WriteLine("Printing all directories...");
-            RecursivelyPrintDirectories(root);
-            Console.WriteLine();
+                Console.WriteLine("Printing all directories...");
+                RecursivelyPrintDirectories(root);
+                Console.WriteLine();
 
-            Console.WriteLine("Renaming dir2 to renamed...");
-            dir2.Rename("renamed");
+                Console.WriteLine("Deleting dir1...");
+                dir1.Delete();
 
-            Console.WriteLine("Printing all directories...");
-            RecursivelyPrintDirectories(root);
-            Console.WriteLine();
+                Console.WriteLine("Printing all directories...");
+                RecursivelyPrintDirectories(root);
+                Console.WriteLine();
+                */
 
-            Console.WriteLine("Deleting renamed...");
-            dir2.Delete();
-
-            Console.WriteLine("Printing all directories...");
-            RecursivelyPrintDirectories(root);
-            Console.WriteLine();
-
-            Console.WriteLine("Deleting dir1...");
-            dir1.Delete();
-
-            Console.WriteLine("Printing all directories...");
-            RecursivelyPrintDirectories(root);
-            Console.WriteLine();
-
-            fs.Unmount("/");
-            disk.TurnOff();
+                fs.Unmount("/");
+                disk.TurnOff();
+                Console.WriteLine("Logical file system success!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("LFS test failed: " + ex.Message);
+                Console.WriteLine(ex.StackTrace);
+            }
         }
+
 
         static void RecursivelyPrintDirectories(Directory dir, bool printFileContent = false, string indent = "")
         {

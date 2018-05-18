@@ -1,6 +1,6 @@
 ﻿// SimpleFS.cs
-// Pete Myers
-// Spring 2018
+// Pete Myers and Steven Reeves
+// 5/17/2018
 
 // NOTE: Implement the methods and classes in this file
 
@@ -32,23 +32,22 @@ namespace SimpleFileSystem
 
         public void Mount(DiskDriver disk, string mountPoint)
         {
-            // TODO: SimpleFS.Mount()
+            virtualFileSystem.Mount(disk, mountPoint);
         }
 
         public void Unmount(string mountPoint)
         {
-            // TODO: SimpleFS.Unmount()
+            virtualFileSystem.Unmount(mountPoint);
         }
 
         public void Format(DiskDriver disk)
         {
-            // TODO: SimpleFS.Fromat()
+            virtualFileSystem.Format(disk);
         }
 
         public Directory GetRootDirectory()
         {
-            // TODO: SimpleFS.GetRootDirectory()
-            return null;
+            return new SimpleDirectory(virtualFileSystem.RootNode);
         }
 
         public FSEntry Find(string path)
@@ -136,8 +135,7 @@ namespace SimpleFileSystem
 
             public Directory CreateDirectory(string name)
             {
-                // TODO: SimpleDirectory.CreateDirectory()
-                return null;
+                return new SimpleDirectory(node.CreateDirectoryNode(name));
             }
 
             public File CreateFile(string name)

@@ -194,25 +194,44 @@ namespace SimpleFileSystem
         {
             // make sectors free!
             // wipe this node and sector(s) from the disk
-            FREE_SECTOR free = new FREE_SECTOR(drive.Disk.BytesPerSector);
-
-            /*
-            int wantsToBeFree = this.nodeSector;
-            while(wantsToBeFree != 0)
-            {
-                byte[] currentBytes = drive.Disk.ReadSector(wantsToBeFree);
-                int nextSector = drive.Disk.
-                drive.Disk.WriteSector(wantsToBeFree, free.RawBytes);
-            }
-            */
+            // remove this node from the virtual directory children list and commit to disk
 
             // if this is a file, then nuke its node sector and data sectors
-            // if directory, nuke just the node sector, and children
+            if (IsFile)
+            {
+                LoadBlocks();
+                foreach (VirtualBlock vb in blocks)
+                {
+                    vb.DeleteBlock();
+                }
+                // empty the cache
+                blocks = null;
+            }
+
+            // if directory, nuke just the node sector, Data sector, and children
+            if(IsDirectory)
+            {
+                LoadChildren();
+                foreach (VirtualNode vn in children.Values.ToList())
+                {
+                    vn.Delete();
+                }
+                children = null;
+
+                // Delete data sector
+                FREE_SECTOR freeData = new FREE_SECTOR(drive.Disk.BytesPerSector);
+                drive.Disk.WriteSector(sector.FirstDataAt, freeData.RawBytes);
+            }
+
 
             // remove this node from parent directory
             parent.LoadChildren();
             parent.children.Remove(Name);
             parent.CommitChildren();
+
+            // Finally, free this nodes NODE_SECTOR
+            FREE_SECTOR free = new FREE_SECTOR(drive.Disk.BytesPerSector);
+            drive.Disk.WriteSector(nodeSector, free.RawBytes);
         }
 
         private void LoadChildren()
@@ -462,6 +481,13 @@ namespace SimpleFileSystem
                 dirty = false;
             }
         }
+
+        public void DeleteBlock()
+        {
+            FREE_SECTOR free = new FREE_SECTOR(drive.Disk.BytesPerSector);
+            drive.Disk.WriteSector(sectorAddress, free.RawBytes);
+        }
+        
 
         public static byte[] ReadBlockData(VirtualDrive drive, List<VirtualBlock> blocks, int startIndex, int length)
         {
