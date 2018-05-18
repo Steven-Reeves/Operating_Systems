@@ -72,8 +72,17 @@ namespace SimpleFileSystem
         public void Unmount(string mountPoint)
         {
             // look up the drive and remove it's mountPoint
+            if (!drives.ContainsKey(mountPoint))
+            {
+                throw new Exception("No drive mounted at mount point: " + mountPoint);
+            }
 
-            // TODO: VirtualFS.Unmount()
+            // Unset root node if needed
+            VirtualDrive drive = drives.Where(x => x.Key == mountPoint).FirstOrDefault().Value;
+            if (rootNode.Drive == drive)
+                rootNode = null;
+
+            drives.Remove(mountPoint);
         }
 
         public VirtualNode RootNode => rootNode;
@@ -144,27 +153,66 @@ namespace SimpleFileSystem
         public int ChildCount => (sector as DIR_NODE).EntryCount;
         public int FileLength => (sector as FILE_NODE).FileSize;
 
-        public void Rename(string name)
+        public void Rename(string newName)
         {
-            // rename this node, update parent as needed, save new name on disk
-            // TODO: VirtualNode.Rename()
+            // rename this node, update parent's children as needed, save new name on disk
+            string oldName = Name;
+
+            // Update parents children first
+            if (parent.children != null)
+            {
+                parent.children.Remove(oldName);
+                parent.children.Add(newName, this);
+            }
+
+            // Rename node on disk
+            sector.Name = newName;
+            drive.Disk.WriteSector(nodeSector, sector.RawBytes);
         }
 
         public void Move(VirtualNode destination)
         {
             // remove this node from it's current parent and attach it to it's new parent
             // update the directory information for both parents on disk
-            // TODO: VirtualNode.Move()
+
+            if (!destination.IsDirectory)
+                throw new Exception("Destination must be a directory!");
+
+            destination.LoadChildren();
+            destination.children.Add(Name, this);
+            destination.CommitChildren();
+
+            parent.LoadChildren();
+            parent.children.Remove(Name);
+            parent.CommitChildren();
+
+            parent = destination;
+
         }
 
         public void Delete()
         {
             // make sectors free!
-            // wipe data for this node from the disk
-            // wipe this node from parent directory from the disk
-            // remove this node from it's parent node
+            // wipe this node and sector(s) from the disk
+            FREE_SECTOR free = new FREE_SECTOR(drive.Disk.BytesPerSector);
 
-            // TODO: VirtualNode.Delete()
+            /*
+            int wantsToBeFree = this.nodeSector;
+            while(wantsToBeFree != 0)
+            {
+                byte[] currentBytes = drive.Disk.ReadSector(wantsToBeFree);
+                int nextSector = drive.Disk.
+                drive.Disk.WriteSector(wantsToBeFree, free.RawBytes);
+            }
+            */
+
+            // if this is a file, then nuke its node sector and data sectors
+            // if directory, nuke just the node sector, and children
+
+            // remove this node from parent directory
+            parent.LoadChildren();
+            parent.children.Remove(Name);
+            parent.CommitChildren();
         }
 
         private void LoadChildren()
@@ -205,6 +253,9 @@ namespace SimpleFileSystem
                 DATA_SECTOR data = new DATA_SECTOR(drive.Disk.BytesPerSector, 0, childListBytes);
                 drive.Disk.WriteSector(sector.FirstDataAt, data.RawBytes);
 
+                // Update entry count
+                (sector as DIR_NODE).EntryCount = children.Count;
+
                 // save the entry count
                 drive.Disk.WriteSector(nodeSector, sector.RawBytes);
 
@@ -241,9 +292,6 @@ namespace SimpleFileSystem
             // Add it to its parent
             children.Add(name, newNode);
 
-            // Increment child count
-            (sector as DIR_NODE).EntryCount++;
-
             CommitChildren();
 
             // Return new node        
@@ -279,9 +327,6 @@ namespace SimpleFileSystem
             // Add it to its parent
             children.Add(name, newNode);
 
-            // Increment child count
-            (sector as DIR_NODE).EntryCount++;
-
             CommitChildren();
 
             return newNode;
@@ -295,9 +340,9 @@ namespace SimpleFileSystem
 
         public VirtualNode GetChild(string name)
         {
-            // TODO: VirtualNode.GetChild()
+            LoadChildren();
 
-            return null;
+           return children.Where(x => x.Value.Name == name).FirstOrDefault().Value;
         }
 
         private void LoadBlocks()
@@ -428,22 +473,34 @@ namespace SimpleFileSystem
             int blockSize = drive.BytesPerDataSector;
             int startBlock = startIndex / blockSize;
             int endBlock = (startIndex + length) / blockSize;
+            int toStart = 0;
 
             // Read data from first block
+
+            VirtualBlock vb = blocks[startBlock];
+            byte[] blockData = vb.Data;
+
+            // Copy data from here
+            int fromStart = startIndex % blockSize;
+            int copyCount = Math.Min(length, blockSize - fromStart);
+            CopyBytes(copyCount, blockData, fromStart, result, toStart);
+
+            toStart += copyCount;
+
+
+            // read data from rest of blocks
+            for (int i = startBlock + 1; i <= endBlock; i++)
             {
-                VirtualBlock vb = blocks[startBlock];
-                byte[] blockData = vb.Data;
+                vb = blocks[i];
+                blockData = vb.Data;
 
-                // Copy data from here
-                int fromStart = startIndex % blockSize;
-                int toStart = 0;
-                int copyCount = Math.Min(length, blockSize - fromStart);
-
+                // Overwrite result data with this block's data
+                fromStart = 0;
+                copyCount = Math.Min((length - toStart), blockSize);
                 CopyBytes(copyCount, blockData, fromStart, result, toStart);
 
+                toStart += copyCount;
             }
-
-            // TODO: read from rest of blocks
 
             return result;
         }
@@ -459,33 +516,33 @@ namespace SimpleFileSystem
 
             // Write data to first block
             int fromStart = 0;
-            {
-                VirtualBlock vb = blocks[startBlock];
-                byte[] blockData = vb.Data;
-                // Overwrite old data
+
+            VirtualBlock vb = blocks[startBlock];
+            byte[] blockData = vb.Data;
+            // Overwrite old data
 
 
-                int toStart = startIndex % blockSize;
-                int copyCount = Math.Min(data.Length, blockSize - toStart);
+            int toStart = startIndex % blockSize;
+            int copyCount = Math.Min(data.Length, blockSize - toStart);
 
-                CopyBytes(copyCount, data, fromStart, blockData, toStart);
+            CopyBytes(copyCount, data, fromStart, blockData, toStart);
 
-                // Put new data in
-                vb.Data = blockData;
+            // Put new data in
+            vb.Data = blockData;
 
-                fromStart += copyCount;
-            }
+            fromStart += copyCount;
+
 
             // Write data to each affected block
             for (int i = startBlock+1; i <= endBlock; i++)
             {
-                VirtualBlock vb = blocks[i];
-                byte[] blockData = vb.Data;
+                vb = blocks[i];
+                blockData = vb.Data;
 
                 // Overwrite old data
 
-                int toStart = 0;
-                int copyCount = Math.Min((data.Length - fromStart), blockSize - toStart);
+                toStart = 0;
+                copyCount = Math.Min((data.Length - fromStart), blockSize - toStart);
                 CopyBytes(copyCount, data, fromStart, blockData, toStart);
 
                 // Put new data in

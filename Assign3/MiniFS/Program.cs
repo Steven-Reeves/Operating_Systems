@@ -145,20 +145,39 @@ namespace MiniFS
                 VirtualNode file1 = dir1.CreateFileNode("file1");
                 VirtualNode file2 = dir1.CreateFileNode("file2");
                 VirtualNode file3 = dir2.CreateFileNode("file3");
-                VirtualNode file4 = dir2.CreateFileNode("file4");
-
+                VirtualNode file4 = dir2.CreateFileNode("file4");           
 
                 TestFileWriteRead(file1, r, 0, 100);    // 1 sector
                 TestFileWriteRead(file1, r, 42, 77);
 
                 TestFileWriteRead(file1, r, 0, 500);    // 2 sectors
-                /*
                 TestFileWriteRead(file1, r, 250, 500);    // 3 sectors
+                TestFileWriteRead(file1, r, 275, 700);    // 4 sectors
 
+                RecursivelyPrintNodes(vfs.RootNode);
+
+                Console.WriteLine("Rename!");
+                dir1 = vfs.RootNode.GetChild("dir1");
+                dir1.Rename("newdir1");
+                RecursivelyPrintNodes(vfs.RootNode);
+
+                // Move something
+                Console.WriteLine("Move!");
+                dir2 = vfs.RootNode.GetChild("dir2");
+                dir1.Move(dir2);
+                RecursivelyPrintNodes(vfs.RootNode);
+
+                // Make sure disk is correct
+                Console.WriteLine("Unmount/mount!");
                 vfs.Unmount("/");
-
                 vfs.Mount(disk, "/");
-                */
+                RecursivelyPrintNodes(vfs.RootNode);
+
+                // Delete
+                Console.WriteLine("Delete file!");
+                VirtualNode file6 = vfs.RootNode.CreateFileNode("file6");
+                file6.Write(0, CreateTestBytes(r, 1000));
+                file6.Delete();
                 RecursivelyPrintNodes(vfs.RootNode);
 
                 disk.TurnOff();
