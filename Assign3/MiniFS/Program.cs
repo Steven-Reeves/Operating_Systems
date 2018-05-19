@@ -248,20 +248,32 @@ namespace MiniFS
                 
                 Directory dir1 = root.CreateDirectory("dir1");
                 Directory dir2 = root.CreateDirectory("dir2");
-                /*
+
                 Random r = new Random();
                 byte[] bytes1 = CreateTestBytes(r, 1000);
                 File file2 = dir2.CreateFile("file2");
                 FileStream stream1 = file2.Open();
                 stream1.Write(0, bytes1);
                 stream1.Close();
-                
+
                 File file2_2 = (File)fs.Find("/dir2/file2");
                 FileStream stream2 = file2_2.Open();
                 byte[] bytes2 = stream2.Read(0, 1000);
                 stream2.Close();
                 if (!Compare(bytes1, bytes2))
                     throw new Exception("bytes read were not the same as written");
+
+                ValidateBadPath(fs, "");
+                ValidateBadPath(fs, "//");
+                ValidateBadPath(fs, "/dir2/nope");
+                ValidateBadPath(fs, "dir2");
+                ValidateBadPath(fs, "nope");
+                ValidateBadPath(fs, "/dir2/file2/nope");
+
+                ValidatePath(fs, "/");
+                ValidatePath(fs, "/dir2");
+                ValidatePath(fs, "/dir1/");
+
 
                 Console.WriteLine("Printing all directories...");
                 RecursivelyPrintDirectories(root);
@@ -273,7 +285,7 @@ namespace MiniFS
                 Console.WriteLine("Printing all directories...");
                 RecursivelyPrintDirectories(root);
                 Console.WriteLine();
-
+                
                 Console.WriteLine("Renaming dir2 to renamed...");
                 dir2.Rename("renamed");
 
@@ -294,7 +306,7 @@ namespace MiniFS
                 Console.WriteLine("Printing all directories...");
                 RecursivelyPrintDirectories(root);
                 Console.WriteLine();
-                */
+
 
                 fs.Unmount("/");
                 disk.TurnOff();
@@ -307,6 +319,23 @@ namespace MiniFS
             }
         }
 
+        static void ValidateBadPath(FileSystem fs, string path)
+        {
+            FSEntry fse = fs.Find(path);
+            if (fse != null)
+            {
+                throw new Exception("Path: " + path + " invalid!");
+            }
+        }
+
+        static void ValidatePath(FileSystem fs, string path)
+        {
+            FSEntry fse = fs.Find(path);
+            if (fse == null || fse.FullPathName != path && (fse.FullPathName + "/") != path)
+            {
+                throw new Exception("Path: " + path + " invalid! Should have been valid..");
+            }
+        }
 
         static void RecursivelyPrintDirectories(Directory dir, bool printFileContent = false, string indent = "")
         {
