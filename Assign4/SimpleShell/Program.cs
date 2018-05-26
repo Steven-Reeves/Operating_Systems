@@ -18,8 +18,8 @@ namespace SimpleShell
         {
             //TestTerminalDriver();
             //TestTerminal();
-            TestSecuritySystem();
-            //TestSessionManager();
+            //TestSecuritySystem();
+            TestSessionManager();
         }
 
         #region terminal driver
@@ -142,6 +142,11 @@ namespace SimpleShell
                 // invalid user ID
                 TestSecurityException(() => { security.UserPreferredShell(42); });
 
+                // second security system
+                SecuritySystem security2 = new SimpleSecurity(fs, "passwd");
+                security2.Authenticate("steven", "foobar42");
+
+
                 fs.Unmount("/");
                 disk.TurnOff();
             }
@@ -185,7 +190,7 @@ namespace SimpleShell
             filesystem.Mount(disk, "/");
             
             // security system
-            SecuritySystem security = new SimpleSecurity(filesystem, "/passwd");
+            SecuritySystem security = new SimpleSecurity(filesystem, "passwd");
 
             // add pete and his test data if needed
             CreatePete(security, filesystem);
@@ -248,11 +253,11 @@ namespace SimpleShell
                 rootDir.CreateFile("passwd");
 
             // user home directory and files if not present
-            if (filesystem.Find("/users") == null)
-                rootDir.CreateDirectory("users");
+            if (filesystem.Find("/home") == null)
+                rootDir.CreateDirectory("home");
 
             // root user if not present
-            SecuritySystem security = new SimpleSecurity(filesystem, "/passwd");
+            SecuritySystem security = new SimpleSecurity(filesystem, "passwd");
             try
             {
                 security.AddUser("root");
@@ -270,16 +275,16 @@ namespace SimpleShell
             int peteUserID = -1;
             try
             {
-                peteUserID = security.UserID("pete");
+                peteUserID = security.UserID("steven");
             }
             catch (Exception)
             {
-                peteUserID = security.AddUser("pete");
-                security.SetPassword("pete", "foobar");
+                peteUserID = security.AddUser("steven");
+                security.SetPassword("steven", "foobar42");
             }
 
             // create some test files for user pete if needed
-            if (filesystem.Find("/users/pete/subdir") == null)
+            if (filesystem.Find(security.UserHomeDirectory(peteUserID)) != null)
             {
                 Directory peteDir = (Directory)filesystem.Find(security.UserHomeDirectory(peteUserID));
                 Directory subDir = peteDir.CreateDirectory("subdir");

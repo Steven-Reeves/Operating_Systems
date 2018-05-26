@@ -48,8 +48,52 @@ namespace SimpleShell
         private void LoadPasswordFile()
         {
             // Read all users from the password file
-            // userID;username;password;homedir;shell
-            // TODO
+
+            // open if it exists
+            Directory root = filesystem.GetRootDirectory();
+            FSEntry entry = filesystem.Find("/" + passwordFileName);
+            if (entry != null)
+            {
+                // Read contents
+                File pwfile = entry as File;
+                FileStream stream = pwfile.Open();
+                byte[] bytes = stream.Read(0, pwfile.Length);
+                stream.Close();
+
+                // convert to string
+                string data = ASCIIEncoding.ASCII.GetString(bytes);
+
+                // parse based on format below
+                // userID;username;password;homedir;shell
+                string[] rows = data.Split('\n');
+                foreach(string row in rows)
+                {
+                    if (row.Length > 0)
+                    {
+                        string[] fields = row.Split(';');
+                        if (fields.Length == 5)
+                        {
+                            User user = new User();
+                            user.userID = Convert.ToInt32(fields[0]);
+                            user.userName = fields[1];
+                            user.password = fields[2];
+                            user.homeDirectory = fields[3];
+                            user.shell = fields[4];
+
+                            usersById[user.userID] = user;
+
+                            // Update UserID
+                            if (user.userID >= nextUserID)
+                                nextUserID = user.userID + 1;
+                        }
+                        else
+                        {
+                            throw new Exception("found malformed row in password file: " + row);
+                        }
+                    }
+                }
+                // TODO: check this logic
+            }
         }
 
         private void SavePasswordFile()
@@ -109,7 +153,22 @@ namespace SimpleShell
             // create user's home directory if needed
             if(filesystem != null)
             {
-                // TODO create filesystem
+                Directory root = filesystem.GetRootDirectory();
+                FSEntry entry = filesystem.Find(user.homeDirectory);
+                if (entry == null)
+                {
+                    Directory home;
+                    entry = filesystem.Find("/home");
+                    if (entry == null)
+                    {
+                        home = root.CreateDirectory("home");
+                    }
+                    else
+                    {
+                        home = entry as Directory;
+                    }
+                    root.CreateDirectory(user.userName);
+                }
             }
 
             // save the user to the password file
