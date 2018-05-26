@@ -1,5 +1,5 @@
 ﻿// Assignment 4
-// Pete Myers
+// Pete Myers and Steven Reeves
 // OIT, Spring 2018
 // Handout
 
@@ -28,12 +28,13 @@ namespace SimpleShell
 
         public void Connect()
         {
-            // TODO
+            // Connect to terminal from driver
+            driver.Connect();
         }
 
         public void Disconnect()
         {
-            // TODO
+            driver.Disconnect();
         }
 
         public bool Echo { get { return handler.Echo; } set { handler.Echo = value; } }
@@ -41,18 +42,21 @@ namespace SimpleShell
         public string ReadLine()
         {
             // NOTE: blocks until a line of text is available
-            // TODO
-            return null;
+            return completedLineQueue.Remove();
         }
 
         public void Write(string line)
         {
-            // TODO
+            // loop through string and send chars to terminal
+            foreach (char c in line)
+                driver.SendChar(c);
         }
 
         public void WriteLine(string line)
         {
-            // TODO
+            // write characters to terminal
+            Write(line);
+            driver.SendNewLine();
         }
 
         private class LineQueue
@@ -71,27 +75,47 @@ namespace SimpleShell
             public void Insert(string s)
             {
                 // wait until both there is capacity and we have the mutex
+                mutex.WaitOne();
+
                 // insert into the buffer
+                theQueue.Enqueue(s);
+
                 // signal any threads waiting to remove an object
-                // TODO
+                hasItemsEvent.Set();
+
+                mutex.ReleaseMutex();
+
             }
 
             public string Remove()
             {
                 // wait until there is at least one object in the queue and we have the mutex
-                // remove the item from the buffer
-                // block any threads waiting to remove, if the queue is empty
-                // TODO
+                WaitHandle.WaitAll(new WaitHandle[] { mutex, hasItemsEvent });
 
-                return null;
+
+                // remove the item from the buffer
+                string result = theQueue.Dequeue();
+
+                // block any threads waiting to remove, if the queue is empty
+                if (theQueue.Count == 0)
+                    hasItemsEvent.Reset();
+
+                mutex.ReleaseMutex();
+
+                return result;
             }
 
             public int Count()
             {
                 // wait until we have the mutex
+                mutex.WaitOne();
+
                 // return the number of items in the queue
-                // TODO
-                return 0;
+                int result = theQueue.Count;
+
+                mutex.ReleaseMutex();
+
+                return result;
             }
         }
 
@@ -116,17 +140,43 @@ namespace SimpleShell
                 {
                     case TerminalInterrupt.CHAR:
                         // queue up the characters until we have a completed line
-                        // TODO
+                        char c = driver.RecvChar();
+                        partialLineQueue.Add(c);
+
+                       
+                        if (Echo)
+                            driver.SendChar(c);
+
                         break;
 
                     case TerminalInterrupt.ENTER:
                         // get all the characters from the partial line queue and create a completed line
-                        // TODO
+                        string line = new string (partialLineQueue.ToArray());
+                        completedLineQueue.Insert(line);
+                        partialLineQueue.Clear();
+
+                        if (Echo)
+                            driver.SendNewLine();
+
                         break;
 
                     case TerminalInterrupt.BACK:
                         // throw away the last character entered
-                        // TODO
+                        if (partialLineQueue.Count > 0)
+                        {
+                            partialLineQueue.RemoveAt(partialLineQueue.Count - 1);
+
+                            if (Echo)
+                            {
+                                driver.SendChar((char)8);
+                                driver.SendChar((char)0);
+                                driver.SendChar((char)8);
+                            }
+                        }
+                        else
+                        {
+                            driver.SendChar((char)7);
+                        }
                         break;
                 }
             }

@@ -1,5 +1,5 @@
 ﻿// Assignment 4
-// Pete Myers
+// Pete Myers and Steven Reeves
 // OIT, Spring 2018
 // Handout
 
