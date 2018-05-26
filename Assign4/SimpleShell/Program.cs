@@ -17,8 +17,8 @@ namespace SimpleShell
         static void Main(string[] args)
         {
             //TestTerminalDriver();
-            TestTerminal();
-            //TestSecuritySystem();
+            //TestTerminal();
+            TestSecuritySystem();
             //TestSessionManager();
         }
 
@@ -87,6 +87,11 @@ namespace SimpleShell
             string s1 = term.ReadLine();
             term.WriteLine("You entered: " + s1);
 
+            term.Write("Enter some private text: ");
+            term.Echo = false;
+            string s2 = term.ReadLine();
+            term.WriteLine("You entered: " + s2);
+
             term.Disconnect();
         }
 
@@ -96,17 +101,69 @@ namespace SimpleShell
 
         static void TestSecuritySystem()
         {
-            SecuritySystem security = new SimpleSecurity();
-            security.AddUser("pete");
-            if (security.NeedsPassword("pete"))
+            try
             {
-                security.SetPassword("pete", "foobar");
+                VolatileDisk disk = new VolatileDisk(0);
+                disk.TurnOn();
+                FileSystem fs = new SimpleFS();
+                fs.Format(disk);
+                fs.Mount(disk, "/");
+
+                SecuritySystem security = new SimpleSecurity(fs, "passwd");
+                security.AddUser("steven");
+                if (security.NeedsPassword("steven"))
+                {
+                    security.SetPassword("steven", "foobar42");
+                }
+                int userID = security.Authenticate("steven", "foobar42");
+                Console.WriteLine("UserID " + userID.ToString());
+                Console.WriteLine("Username " + security.UserName(userID));
+                Console.WriteLine("Home Directory " + security.UserHomeDirectory(userID));
+                Console.WriteLine("Shell " + security.UserPreferredShell(userID));
+
+                // Try failure scenarios
+
+                // Add user "steven" again
+                TestSecurityException( () => { security.AddUser("steven"); });
+                // Password for no one
+                TestSecurityException(() => { security.NeedsPassword("nope"); });
+                // Set password for invalid user
+                TestSecurityException(() => { security.SetPassword("nope", "12345678"); });
+                // Set invalid password
+                TestSecurityException(() => { security.SetPassword("steven", "hat"); });
+                // Authenticate invalid user
+                TestSecurityException(() => { security.Authenticate("nope", "12345678"); });
+                // Authenticate invalid password
+                TestSecurityException(() => { security.Authenticate("steven", "hat"); });
+                // invalid user ID
+                TestSecurityException(() => { security.UserName(42); });
+                // invalid user ID
+                TestSecurityException(() => { security.UserHomeDirectory(42); });
+                // invalid user ID
+                TestSecurityException(() => { security.UserPreferredShell(42); });
+
+                fs.Unmount("/");
+                disk.TurnOff();
             }
-            int userID = security.Authenticate("pete", "foobar");
-            Console.WriteLine("UserID " + userID.ToString());
-            Console.WriteLine("Username " + security.UserName(userID));
-            Console.WriteLine("Home Directory " + security.UserHomeDirectory(userID));
-            Console.WriteLine("Shell " + security.UserPreferredShell(userID));
+            catch(Exception ex)
+            {
+                Console.WriteLine("Exception: " + ex.Message);
+            }
+        }
+
+        delegate void securityTest();
+
+        static void TestSecurityException(securityTest test)
+        {
+            try
+            {
+                test();
+                Console.WriteLine("Fail!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Success! Expected exception: " + ex.Message);
+            }
         }
 
         #endregion

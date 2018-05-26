@@ -55,8 +55,35 @@ namespace SimpleShell
         private void SavePasswordFile()
         {
             // Save all users to the password file
+
+            // format the data as such
             // userID;username;password;homedir;shell
-            // TODO
+            string data = "";
+            foreach (User u in usersById.Values)
+            {
+                data += u.userID.ToString() + ";";
+                data += u.userName + ";";
+                data += u.password + ";";
+                data += u.homeDirectory + ";";
+                data += u.shell + "\n";
+            }
+
+
+            // Write to file
+            Directory root = filesystem.GetRootDirectory();
+            File pwfile;
+            FSEntry entry = filesystem.Find("/" + passwordFileName);
+            if(entry == null)
+            {
+                pwfile = root.CreateFile(passwordFileName);
+            }
+            else
+            {
+                pwfile = entry as File;
+            }
+            FileStream stream = pwfile.Open();
+            stream.Write(0, ASCIIEncoding.ASCII.GetBytes(data));
+            stream.Close();
         }
 
         private User UserByName(string username)
@@ -66,68 +93,105 @@ namespace SimpleShell
 
         public int AddUser(string username)
         {
+            if (usersById.Count(u => u.Value.userName == username) != 0)
+                throw new Exception("User: " + username + " already exists!");
+
             // create a new user with default home directory and shell
             // initially empty password
-            // create user's home directory if needed
-            // return user id
-            // save the user to the password file
-            // TODO
+            User user = new User();
+            user.userID = nextUserID++;
+            user.userName = username;
+            user.password = null;
+            user.shell = "pshell";
+            user.homeDirectory = "/home/" + username;
+            usersById[user.userID] = user;
 
-            return 0;
+            // create user's home directory if needed
+            if(filesystem != null)
+            {
+                // TODO create filesystem
+            }
+
+            // save the user to the password file
+            SavePasswordFile();
+
+            // return user id
+            return user.userID;
         }
 
         public int UserID(string username)
         {
             // lookup user by username and return user id
-            // TODO
-            return 0;
+            User u = UserByName(username);
+            if (u == null)
+                throw new Exception("User: " + username + " not found!");
+            return u.userID;
         }
 
         public bool NeedsPassword(string username)
         {
             // return true if user needs a password set
-            // TODO
-            return false;
+            User u = UserByName(username);
+            if (u == null)
+                throw new Exception("User: " + username + " not found!");
+
+            return u.password == null;
         }
 
         public void SetPassword(string username, string password)
         {
-            // set user's password
+            User u = UserByName(username);
+            if (u == null)
+                throw new Exception("User: " + username + " not found!");
+
             // validate it meets any rules
+            // >= 8 characters
+            if(password.Length < 8)
+                throw new Exception("Password must be at least 8 characters long!");
+
+            // set user's password
+            u.password = password;
+
             // save it to the password file
-            // TODO
+            SavePasswordFile();
         }
 
         public int Authenticate(string username, string password)
         {
             // authenticate user by username/password
-            // return user id
-            // TODO
+            User u = UserByName(username);
+            if (u == null || u.password != password)
+                throw new Exception("User/password combination not found!");
 
-            return 0;
+            // return user id
+            return u.userID;
         }
 
         public string UserName(int userID)
         {
             // lookup user by user id and return username
-            // TODO
-            return null;
+            if(!usersById.ContainsKey(userID))
+                throw new Exception("UserID: " + userID + " not found!");
+
+            return usersById[userID].userName;
         }
 
         public string UserHomeDirectory(int userID)
         {
             // lookup user by user id and return home directory
-            // TODO
+            if (!usersById.ContainsKey(userID))
+                throw new Exception("UserID: " + userID + " not found!");
 
-            return null;
+            return usersById[userID].homeDirectory;
         }
 
         public string UserPreferredShell(int userID)
         {
             // lookup user by user id and return shell name
-            // TODO
+            if (!usersById.ContainsKey(userID))
+                throw new Exception("UserID: " + userID + " not found!");
 
-            return null;
+            return usersById[userID].shell;
         }
     }
 }
