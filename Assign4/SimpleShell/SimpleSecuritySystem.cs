@@ -194,7 +194,7 @@ namespace SimpleShell
             if (u == null)
                 throw new Exception("User: " + username + " not found!");
 
-            return u.password == null;
+            return string.IsNullOrEmpty(u.password);
         }
 
         public void SetPassword(string username, string password)

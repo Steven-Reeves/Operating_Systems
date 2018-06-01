@@ -271,7 +271,7 @@ namespace SimpleShell
 
         static void CreatePete(SecuritySystem security, FileSystem filesystem)
         {
-            // add user pete if not already there
+            // add user steven if not already there
             int peteUserID = -1;
             try
             {
@@ -286,7 +286,9 @@ namespace SimpleShell
             // create some test files for user pete if needed
             if (filesystem.Find(security.UserHomeDirectory(peteUserID)) != null)
             {
+                /*
                 Directory peteDir = (Directory)filesystem.Find(security.UserHomeDirectory(peteUserID));
+                if(peteDir.)
                 Directory subDir = peteDir.CreateDirectory("subdir");
                 File file1 = subDir.CreateFile("file1");
                 File file2 = subDir.CreateFile("file2");
@@ -296,6 +298,7 @@ namespace SimpleShell
                 FileStream stream2 = file2.Open();
                 stream2.Write(0, ASCIIEncoding.ASCII.GetBytes("back at you from file 2!"));
                 stream2.Close();
+                */
             }
         }
 

@@ -59,9 +59,15 @@ namespace SimpleShell
 
             // main loop...
             // print command prompt
+            terminal.Echo = true;
+            terminal.Write("Whats up?");
             // get command line
-            // identify and execute command
 
+            string cmdLine = terminal.ReadLine();
+            string[] args = cmdLine.Split(' ');
+            // identify and execute command
+            Cmd cmd = cmds[args[0]];
+            cmd.Execute(args);
         }
 
         #region commands
