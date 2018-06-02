@@ -286,19 +286,25 @@ namespace SimpleShell
             // create some test files for user pete if needed
             if (filesystem.Find(security.UserHomeDirectory(peteUserID)) != null)
             {
-                /*
-                Directory peteDir = (Directory)filesystem.Find(security.UserHomeDirectory(peteUserID));
-                if(peteDir.)
-                Directory subDir = peteDir.CreateDirectory("subdir");
-                File file1 = subDir.CreateFile("file1");
-                File file2 = subDir.CreateFile("file2");
-                FileStream stream1 = file1.Open();
-                stream1.Write(0, ASCIIEncoding.ASCII.GetBytes("hello from file 1!"));
-                stream1.Close();
-                FileStream stream2 = file2.Open();
-                stream2.Write(0, ASCIIEncoding.ASCII.GetBytes("back at you from file 2!"));
-                stream2.Close();
-                */
+
+                try
+                {
+                    Directory peteDir = (Directory)filesystem.Find(security.UserHomeDirectory(peteUserID));
+
+                    Directory subDir = peteDir.CreateDirectory("subdir");
+                    File file1 = subDir.CreateFile("file1");
+                    File file2 = subDir.CreateFile("file2");
+                    FileStream stream1 = file1.Open();
+                    stream1.Write(0, ASCIIEncoding.ASCII.GetBytes("hello from file 1!"));
+                    stream1.Close();
+                    FileStream stream2 = file2.Open();
+                    stream2.Write(0, ASCIIEncoding.ASCII.GetBytes("back at you from file 2!"));
+                    stream2.Close();
+                }
+                catch(Exception)
+                {
+                    // Nothing here
+                }
             }
         }
 

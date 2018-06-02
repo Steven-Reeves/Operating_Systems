@@ -150,13 +150,14 @@ namespace SimpleShell
                         break;
 
                     case TerminalInterrupt.ENTER:
+
+                        if (Echo)
+                            driver.SendNewLine();
+
                         // get all the characters from the partial line queue and create a completed line
                         string line = new string (partialLineQueue.ToArray());
                         completedLineQueue.Insert(line);
                         partialLineQueue.Clear();
-
-                        if (Echo)
-                            driver.SendNewLine();
 
                         break;
 

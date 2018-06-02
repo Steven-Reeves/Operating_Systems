@@ -55,7 +55,7 @@ namespace SimpleShell
 
             public void Logout()
             {
-                // TODO
+                // Nothing to do here
             }
         }
 
@@ -94,7 +94,6 @@ namespace SimpleShell
                         }
 
                         // prompt for password
-                        // TODO: password prompt on same line as username
                         terminal.Echo = false;
                         terminal.Write("Enter Password: ");
                         string password = terminal.ReadLine();

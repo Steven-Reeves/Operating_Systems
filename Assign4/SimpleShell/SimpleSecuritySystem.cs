@@ -92,7 +92,6 @@ namespace SimpleShell
                         }
                     }
                 }
-                // TODO: check this logic
             }
         }
 
@@ -167,7 +166,7 @@ namespace SimpleShell
                     {
                         home = entry as Directory;
                     }
-                    root.CreateDirectory(user.userName);
+                    home.CreateDirectory(user.userName);
                 }
             }
 
