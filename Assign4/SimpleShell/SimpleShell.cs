@@ -51,8 +51,6 @@ namespace SimpleShell
             AddCmd(new CatCmd(this));
             AddCmd(new MkFileCmd(this));
             AddCmd(new HelpCmd(this));
-            AddCmd(new CpCmd(this));
-            // TODO add more commands
         }
 
         private void AddCmd(Cmd c) { cmds[c.Name] = c; }
@@ -342,66 +340,6 @@ namespace SimpleShell
                 Terminal.WriteLine("            [cmd] prints usage statement");
             }
         }
-
-        private class CpCmd : Cmd
-        {
-            public CpCmd(SimpleShell shell) : base("cp", shell) { }
-
-            public override void Execute(string[] args)
-            {
-                // TODO finish this, end of lab 6/2
-                /*
-                // change the current working directory
-                // validate cmd line
-                if (args.Length == 3)
-                {
-                    // get file name
-                    string filename = args[1];
-
-                    // get directory name
-                    string dirname = args[2];
-
-                    // Read contents of file
-
-
-                    //create the file
-                    File file = Shell.cwd.CreateFile(filename);
-                    if (file != null)
-                    {
-                        //open filestream
-                        FileStream stream = file.Open();
-
-                        //Write other cmd line as text
-                        int index = 0;
-                        foreach (string s in args.Skip(2))
-                        {
-                            string contentstring = s + " ";
-                            byte[] content = ASCIIEncoding.ASCII.GetBytes(contentstring);
-                            stream.Write(index, content);
-                            index += content.Length;
-                        }
-                        stream.Close();
-                    }
-
-                }
-                else
-                {
-                    Terminal.WriteLine("Error: Need 3 arugments");
-                    PrintUsage();
-                }
-                */
-            }
-
-            override public string HelpText { get { return "Copies file to new directory"; } }
-
-            override public void PrintUsage()
-            {
-                Terminal.WriteLine("usage: cp <file> <dir>");
-                Terminal.WriteLine("          <file> name from current directory");
-                Terminal.WriteLine("          <dir> desitnation to be copied to");
-            }
-        }
-        // TODO  more commands here
 
         #endregion
     }
